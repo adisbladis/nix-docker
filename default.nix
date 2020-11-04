@@ -95,7 +95,13 @@ let
   };
   nixConfContents = (lib.concatStringsSep "\n" (lib.mapAttrsFlatten (n: v: "${n} = ${v}") nixConf)) + "\n";
 
-  passwd = pkgs.runCommand "base-system" {
+  baseSystem = let
+    nixpkgs = pkgs.path;
+    channel = pkgs.runCommand "channel-nixos" {} ''
+      mkdir $out
+      ln -s ${nixpkgs} $out/nixpkgs
+    '';
+  in pkgs.runCommand "base-system" {
     inherit passwdContents groupContents shadowContents nixConfContents;
     passAsFile = [
       "passwdContents"
@@ -124,8 +130,16 @@ let
     mkdir -p $out/etc/nix
     cat $nixConfContentsPath > $out/etc/nix/nix.conf
 
-  '';
 
+    mkdir -p $out/nix/var/nix/profiles/per-user/root
+    ln -s ${channel} $out/nix/var/nix/profiles/per-user/root/channels-1-link
+    ln -s $out/nix/var/nix/profiles/per-user/root/channels-1-link $out/nix/var/nix/profiles/per-user/root/channels
+
+    mkdir -p $out/root
+    mkdir -p $out/root/.nix-defexpr
+    ln -s $out/nix/var/nix/profiles/per-user/root/channels $out/root/.nix-defexpr/channels
+    echo "https://nixos.org/channels/nixpkgs-unstable nixpkgs" > $out/root/.nix-channels
+  '';
 
 in
 pkgs.dockerTools.buildLayeredImageWithNixDb {
@@ -134,16 +148,14 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   tag = "latest";
 
   contents = [
-    # Save ~10M image size
-    (pkgs.nix.override {
-      withAWS = false;
-    })
+    pkgs.nix
     pkgs.bashInteractive
     pkgs.coreutils
     pkgs.gnutar
     pkgs.gzip
     pkgs.gnugrep
-    passwd
+    pkgs.cacert.out
+    baseSystem
   ];
 
   config = {
@@ -153,7 +165,8 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
       "PATH=/nix/var/nix/profiles/default/bin:/nix/var/nix/profiles/default/sbin:/bin:/sbin:/usr/bin:/usr/sbin"
       "GIT_SSL_CAINFO=${pkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=${pkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
-      "NIX_PATH=nixpkgs=${pkgs.nix-gitignore.gitignoreSource [ ".git" ] pkgs.path}"
+      "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
+      "CMD=/bin/bash"
     ];
   };
 
