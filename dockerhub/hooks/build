@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ls $(echo "${PATH//:/$'\n'}")
+
 ARCH="x86_64-linux"
 
 docker build -f bootstrap/Dockerfile -t nix-bootstrap:latest bootstrap
