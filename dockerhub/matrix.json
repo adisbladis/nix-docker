@@ -6,6 +6,14 @@
         "nixpkgs-unstable": {
             "name": "nixpkgs",
             "url": "https://nixos.org/channels/nixpkgs-unstable"
+        },
+        "nixos-unstable": {
+            "name": "nixos",
+            "url": "https://nixos.org/channels/nixos-unstable"
+        },
+        "nixos-20.09": {
+            "name": "nixos",
+            "url": "https://nixos.org/channels/nixos-20.09"
         }
     }
 }
