@@ -1,12 +1,14 @@
 {
   pkgs ? import <nixpkgs> {}
+  , lib ? pkgs.lib
   , name ? "nix"
   , tag ? "latest"
+  , crossSystem ? null
 }:
 
 let
 
-  inherit (pkgs) lib;
+  buildPkgs = if crossSystem != null && crossSystem != pkgs.system then pkgs.pkgsCross.${crossSystem} else pkgs;
 
   users = {
 
@@ -100,13 +102,13 @@ let
   nixConfContents = (lib.concatStringsSep "\n" (lib.mapAttrsFlatten (n: v: "${n} = ${v}") nixConf)) + "\n";
 
   baseSystem = let
-    nixpkgs = pkgs.path;
-    channel = pkgs.runCommand "channel-nixos" {} ''
+    nixpkgs = buildPkgs.path;
+    channel = buildPkgs.runCommand "channel-nixos" {} ''
       mkdir $out
       ln -s ${nixpkgs} $out/nixpkgs
       echo "[]" > $out/manifest.nix
     '';
-  in pkgs.runCommand "base-system" {
+  in buildPkgs.runCommand "base-system" {
     inherit passwdContents groupContents shadowContents nixConfContents;
     passAsFile = [
       "passwdContents"
@@ -147,28 +149,28 @@ let
   '';
 
 in
-pkgs.dockerTools.buildLayeredImageWithNixDb {
+buildPkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag;
 
   contents = [
-    pkgs.nix
-    pkgs.bashInteractive
-    pkgs.coreutils
-    pkgs.gnutar
-    pkgs.gzip
-    pkgs.gnugrep
-    pkgs.cacert.out
+    buildPkgs.nix
+    buildPkgs.bashInteractive
+    buildPkgs.coreutils
+    buildPkgs.gnutar
+    buildPkgs.gzip
+    buildPkgs.gnugrep
+    buildPkgs.cacert.out
     baseSystem
   ];
 
   config = {
     Env = [
-      "SSL_CERT_FILE=${pkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
+      "SSL_CERT_FILE=${buildPkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
       "USER=root"
       "PATH=/nix/var/nix/profiles/default/bin:/nix/var/nix/profiles/default/sbin:/bin:/sbin:/usr/bin:/usr/sbin"
-      "GIT_SSL_CAINFO=${pkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
-      "NIX_SSL_CERT_FILE=${pkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
+      "GIT_SSL_CAINFO=${buildPkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
+      "NIX_SSL_CERT_FILE=${buildPkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
       "CMD=/bin/bash"
     ];

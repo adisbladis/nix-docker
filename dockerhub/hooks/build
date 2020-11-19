@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ARCH="x86_64-linux"
+
 docker build -f bootstrap/Dockerfile -t nix-bootstrap:latest bootstrap
 
-buildcmd="nix-build --no-out-link --argstr name $DOCKER_REPO --argstr tag $DOCKER_TAG /build/default.nix"
-
-docker run -i \
+for arch in $ARCH; do
+    buildcmd="nix-build --no-out-link --argstr name $DOCKER_REPO --argstr tag latest-$arch /build/default.nix"
+    docker run -i \
        --privileged \
        -v $(readlink -f ..):/build \
        -v /var/run/docker.sock:/var/run/docker.sock \
        nix-bootstrap \
        nix-shell -p docker --run "docker load < \`$buildcmd\`"
+done
