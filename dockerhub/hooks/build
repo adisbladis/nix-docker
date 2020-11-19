@@ -6,12 +6,16 @@ import json
 import os
 
 
+def make_tag(url: str, system: str) -> str:
+    return "-".join((url.split("/")[-1], system))
+
+
 def gen_cmds(systems, channels):
     for system in systems:
         for name, url in channels:
-            yield "env NIX_PATH=nixpkgs={url} nix-build --no-out-link --argstr name {docker_repo} --argstr tag latest-{system} default.nix".format(
+            yield "env NIX_PATH=nixpkgs={url} nix-build --no-out-link --argstr name {docker_repo} --argstr tag {tag} /build/default.nix".format(
                 docker_repo=docker_repo,
-                system=system,
+                tag=make_tag(url, system),
                 url=url+"/nixexprs.tar.xz",
             )
 
