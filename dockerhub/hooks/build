@@ -33,7 +33,7 @@ def run(buildcmd: str):
         "nix-shell", "-p", "docker", "--run", "docker load < `{}`".format(buildcmd)
     ]
 
-    subprocess.run(buildcmd, check=True)
+    subprocess.run(cmd, check=True)
 
 
 if __name__ == "__main__":
