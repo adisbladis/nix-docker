@@ -1,0 +1,8 @@
+{
+    "systems": [
+        "x86_64-linux"
+    ],
+    "channels": [
+        ["nixpkgs", "https://nixos.org/channels/nixpkgs-unstable"]
+    ]
+}
