@@ -100,6 +100,7 @@ let
     channel = pkgs.runCommand "channel-nixos" {} ''
       mkdir $out
       ln -s ${nixpkgs} $out/nixpkgs
+      echo "[]" > $out/manifest.nix
     '';
   in pkgs.runCommand "base-system" {
     inherit passwdContents groupContents shadowContents nixConfContents;
