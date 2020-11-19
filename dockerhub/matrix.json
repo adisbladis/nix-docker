@@ -2,7 +2,10 @@
     "systems": [
         "x86_64-linux"
     ],
-    "channels": [
-        ["nixpkgs", "https://nixos.org/channels/nixpkgs-unstable"]
-    ]
+    "channels": {
+        "nixpkgs-unstable": {
+            "name": "nixpkgs",
+            "url": "https://nixos.org/channels/nixpkgs-unstable"
+        }
+    }
 }

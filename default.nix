@@ -4,6 +4,8 @@
   , name ? "nix"
   , tag ? "latest"
   , crossSystem ? null
+  , channelName ? "nixpkgs"
+  , channelURL ? "https://nixos.org/channels/nixpkgs-unstable"
 }:
 
 let
@@ -145,7 +147,7 @@ let
     mkdir -p $out/root
     mkdir -p $out/root/.nix-defexpr
     ln -s $out/nix/var/nix/profiles/per-user/root/channels $out/root/.nix-defexpr/channels
-    echo "https://nixos.org/channels/nixpkgs-unstable nixpkgs" > $out/root/.nix-channels
+    echo "${channelURL} ${channelName}" > $out/root/.nix-channels
   '';
 
 in
