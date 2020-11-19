@@ -1,4 +1,8 @@
-{ pkgs ? import <nixpkgs> {} }:
+{
+  pkgs ? import <nixpkgs> {}
+  , name ? "nix"
+  , tag ? "latest"
+}:
 
 let
 
@@ -145,8 +149,7 @@ let
 in
 pkgs.dockerTools.buildLayeredImageWithNixDb {
 
-  name = "nix";
-  tag = "latest";
+  inherit name tag;
 
   contents = [
     pkgs.nix

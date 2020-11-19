@@ -1,4 +1,5 @@
 # Dockerfile to create an environment that contains the Nix package manager.
+# This is based on the old Alpine based Docker image and is used for bootstraping the Docker hub build
 
 FROM alpine
 
@@ -37,9 +38,3 @@ ENV \
     GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt \
     NIX_SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
     NIX_PATH=/nix/var/nix/profiles/per-user/root/channels
-
-COPY default.nix /root/nix-docker/
-
-RUN nix-shell -p docker --run 'docker load < `nix-build --no-out-link /root/nix-docker/default.nix`'
-
-FROM localhost/nix:latest
