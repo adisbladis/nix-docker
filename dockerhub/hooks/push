@@ -49,4 +49,5 @@ if __name__ == "__main__":
         data = json.load(f)
 
     for cmd in gen_cmds(data["systems"], data["channels"]):
+        print(cmd)
         subprocess.run(cmd, check=True)
