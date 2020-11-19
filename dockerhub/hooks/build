@@ -2,4 +2,12 @@
 set -euo pipefail
 
 docker build -f bootstrap/Dockerfile -t nix-bootstrap:latest bootstrap
-docker run -it --privileged -v $(readlink -f ..):/build -v /var/run/docker.sock:/var/run/docker.sock nix-bootstrap 'nix-shell -p docker --run '"'"'docker load < `nix-build --no-out-link /build/default.nix`'"'"''
+
+buildcmd="nix-build --no-out-link --argstr name $DOCKER_REPO --argstr tag $DOCKER_TAG default.nix"
+
+docker run -it \
+       --privileged \
+       -v $(readlink -f ..):/build \
+       -v /var/run/docker.sock:/var/run/docker.sock \
+       nix-bootstrap \
+       "nix-shell -p docker --run 'docker load < \`$buildcmd\`'"
