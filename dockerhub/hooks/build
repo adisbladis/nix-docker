@@ -3,7 +3,7 @@ set -euo pipefail
 
 docker build -f bootstrap/Dockerfile -t nix-bootstrap:latest bootstrap
 
-buildcmd="nix-build --no-out-link --argstr name $DOCKER_REPO --argstr tag $DOCKER_TAG default.nix"
+buildcmd="nix-build --no-out-link --argstr name $DOCKER_REPO --argstr tag $DOCKER_TAG /build/default.nix"
 
 docker run -i \
        --privileged \
