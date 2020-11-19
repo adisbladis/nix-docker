@@ -16,28 +16,32 @@ def gen_cmds(systems, channels):
             images.append(image)
             yield ["docker", "push", image]
 
-
         manifest_tag = "-".join((name, "latest"))
-        create_cmd = ["docker", "manifest", "create", manifest_tag]
+        tag = ":".join((docker_repo, manifest_tag))
+        create_cmd = ["docker", "manifest", "create", tag]
         for img in images:
             create_cmd = create_cmd + [
                 "--amend", img
             ]
         yield create_cmd
-        yield ["docker", "manifest", "push", ":".join((docker_repo, manifest_tag))]
+        yield ["docker", "manifest", "push", tag]
 
         if name == "nixpkgs-unstable":
             manifest_tag = "latest"
-            create_cmd = ["docker", "manifest", "create", manifest_tag]
+            tag = ":".join((docker_repo, manifest_tag))
+            create_cmd = ["docker", "manifest", "create", tag]
             for img in images:
                 create_cmd = create_cmd + [
                     "--amend", img
                 ]
             yield create_cmd
-            yield ["docker", "manifest", "push", ":".join((docker_repo, manifest_tag))]
+            yield ["docker", "manifest", "push", tag]
 
 
 if __name__ == "__main__":
+    # For docker manifest create/push
+    os.environ["DOCKER_CLI_EXPERIMENTAL"] = "enabled"
+
     docker_repo = os.environ["DOCKER_REPO"]
 
     matrix_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "matrix.json")
