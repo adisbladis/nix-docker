@@ -22,8 +22,6 @@ RUN wget https://nixos.org/releases/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-x8
   && /nix/var/nix/profiles/default/bin/nix-store --optimise \
   && /nix/var/nix/profiles/default/bin/nix-store --verify --check-contents
 
-# RUN mkdir /root/nix-docker
-
 ONBUILD ENV \
     ENV=/etc/profile \
     USER=root \
@@ -42,6 +40,6 @@ ENV \
 
 COPY default.nix /root/nix-docker/
 
-RUN docker load < `nix-build --no-out-link /root/nix-docker/default.nix`
+RUN nix-shell -p docker --run 'docker load < `nix-build --no-out-link /root/nix-docker/default.nix`'
 
 FROM localhost/nix:latest
