@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-find .
-env
-docker build -f $DOCKERFILE_PATH -t $IMAGE_NAME .
+set -euo pipefail
+
+docker build -f bootstrap/Dockerfile -t nix-bootstrap:latest bootstrap
+docker run -it --privileged -v $(readlink -f ..):/build -v /var/run/docker.sock:/var/run/docker.sock nix-bootstrap 'nix-shell -p docker --run '"'"'docker load < `nix-build --no-out-link /build/default.nix`'"'"''
