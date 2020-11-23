@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     docker_repo = os.environ["DOCKER_REPO"]
 
-    matrix_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "matrix.json")
+    matrix_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "matrix.json")
     with open(matrix_path) as f:
         data = json.load(f)
 

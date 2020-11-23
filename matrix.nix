@@ -5,7 +5,7 @@
 # Convert the JSON matrix into an attrset of derivations
 # You can build indvidual images like `nix-build matrix.nix -A nixos-20.09-x86_64-linux`
 let
-  matrix = lib.importJSON ./dockerhub/matrix.json;
+  matrix = lib.importJSON ./matrix.json;
 in
 lib.listToAttrs (lib.foldl'
   (acc: system: acc ++ (lib.mapAttrsToList (name: channel: (
