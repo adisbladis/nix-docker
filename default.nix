@@ -7,7 +7,26 @@
 , channelURL ? "https://nixos.org/channels/nixpkgs-unstable"
 }:
 let
-  buildPkgs = if crossSystem != null && crossSystem != pkgs.system then pkgs.pkgsCross.${crossSystem} else pkgs;
+  buildPkgs = pkgs;
+  targetPkgs =
+    if crossSystem != null && crossSystem != pkgs.system
+    then pkgs.pkgsCross.${crossSystem}
+    else pkgs;
+
+  defaultPkgs = [
+    targetPkgs.nix
+    targetPkgs.bashInteractive
+    targetPkgs.coreutils-full
+    targetPkgs.gnutar
+    targetPkgs.gzip
+    targetPkgs.gnugrep
+    targetPkgs.which
+    targetPkgs.curl
+    targetPkgs.less
+    targetPkgs.wget
+    targetPkgs.man
+    targetPkgs.cacert.out
+  ];
 
   users = {
 
@@ -114,14 +133,42 @@ let
 
   baseSystem =
     let
-      nixpkgs = buildPkgs.path;
-      channel = buildPkgs.runCommand "channel-nixos" { } ''
+      nixpkgs = targetPkgs.path;
+      channel = targetPkgs.runCommand "channel-nixos" { } ''
         mkdir $out
         ln -s ${nixpkgs} $out/nixpkgs
         echo "[]" > $out/manifest.nix
       '';
+      rootEnv = pkgs.buildEnv {
+        name = "root-profile-env";
+        paths = defaultPkgs;
+      };
+      profile = targetPkgs.runCommand "user-environment" { } ''
+        mkdir $out
+        cp -a ${rootEnv}/* $out/
+
+        cat > $out/manifest.nix <<EOF
+        [
+        ${lib.concatStringsSep "\n" (builtins.map (drv: let
+          outputs = drv.outputsToInstall or [ "out" ];
+        in ''
+          {
+            ${lib.concatStringsSep "\n" (builtins.map (output: ''
+              ${output} = { outPath = "${lib.getOutput output drv}"; };
+            '') outputs)}
+            outputs = [ ${lib.concatStringsSep " " (builtins.map (x: "\"${x}\"") outputs)} ];
+            name = "${drv.name}";
+            outPath = "${drv}";
+            system = "${drv.system}";
+            type = "derivation";
+            meta = { };
+          }
+        '') defaultPkgs)}
+        ]
+        EOF
+      '';
     in
-    buildPkgs.runCommand "base-system"
+    targetPkgs.runCommand "base-system"
       {
         inherit passwdContents groupContents shadowContents nixConfContents;
         passAsFile = [
@@ -146,47 +193,60 @@ let
       cat $shadowContentsPath > $out/etc/shadow
       echo "" >> $out/etc/shadow
 
+      mkdir -p $out/usr
+      ln -s /nix/var/nix/profiles/share $out/usr/
+
+      mkdir -p $out/nix/var/nix/gcroots
+
       mkdir $out/tmp
 
       mkdir -p $out/etc/nix
       cat $nixConfContentsPath > $out/etc/nix/nix.conf
 
-
+      mkdir -p $out/root
       mkdir -p $out/nix/var/nix/profiles/per-user/root
+
+      ln -s ${profile} $out/nix/var/nix/profiles/default-1-link
+      ln -s $out/nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/default
+      ln -s /nix/var/nix/profiles/default $out/root/.nix-profile
+
       ln -s ${channel} $out/nix/var/nix/profiles/per-user/root/channels-1-link
       ln -s $out/nix/var/nix/profiles/per-user/root/channels-1-link $out/nix/var/nix/profiles/per-user/root/channels
 
-      mkdir -p $out/root
       mkdir -p $out/root/.nix-defexpr
       ln -s $out/nix/var/nix/profiles/per-user/root/channels $out/root/.nix-defexpr/channels
       echo "${channelURL} ${channelName}" > $out/root/.nix-channels
     '';
 
 in
-buildPkgs.dockerTools.buildLayeredImageWithNixDb {
+targetPkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag;
 
-  contents = [
-    buildPkgs.nix
-    buildPkgs.bashInteractive
-    buildPkgs.coreutils
-    buildPkgs.gnutar
-    buildPkgs.gzip
-    buildPkgs.gnugrep
-    buildPkgs.cacert.out
-    baseSystem
-  ];
+  contents = [ baseSystem ];
+
+  extraCommands = ''
+    rm -rf nix-support
+    ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
+  '';
 
   config = {
+    Cmd = [ "/root/.nix-profile/bin/bash" ];
     Env = [
-      "SSL_CERT_FILE=${buildPkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
       "USER=root"
-      "PATH=/nix/var/nix/profiles/default/bin:/nix/var/nix/profiles/default/sbin:/bin:/sbin:/usr/bin:/usr/sbin"
-      "GIT_SSL_CAINFO=${buildPkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
-      "NIX_SSL_CERT_FILE=${buildPkgs.cacert.out}/etc/ssl/certs/ca-bundle.crt"
+      "PATH=${lib.concatStringsSep ":" [
+        "/root/.nix-profile/bin"
+        "/nix/var/nix/profiles/default/bin"
+        "/nix/var/nix/profiles/default/sbin"
+      ]}"
+      "MANPATH=${lib.concatStringsSep ":" [
+        "/root/.nix-profile/share/man"
+        "/nix/var/nix/profiles/default/share/man"
+      ]}"
+      "SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
+      "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
+      "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
-      "CMD=/bin/bash"
     ];
   };
 
