@@ -10,7 +10,10 @@ let
   buildPkgs = pkgs;
   targetPkgs =
     if crossSystem != null && crossSystem != pkgs.system
-    then pkgs.pkgsCross.${crossSystem}
+    then {
+      aarch64-linux = pkgs.pkgsCross.aarch64-multiplatform;
+      x86_64-linux = pkgs.pkgsCross.gnu64;
+    }.${crossSystem}
     else pkgs;
 
   defaultPkgs = [
