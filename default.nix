@@ -32,6 +32,7 @@ let
     targetPkgs.wget
     targetPkgs.man
     targetPkgs.cacert.out
+    targetPkgs.findutils
   ];
 
   users = {
