@@ -223,6 +223,10 @@ let
       mkdir -p $out/root/.nix-defexpr
       ln -s $out/nix/var/nix/profiles/per-user/root/channels $out/root/.nix-defexpr/channels
       echo "${channelURL} ${channelName}" > $out/root/.nix-channels
+
+      mkdir -p $out/bin $out/usr/bin
+      ln -s ${targetPkgs.coreutils}/bin/env $out/usr/bin/env
+      ln -s ${targetPkgs.bashInteractive}/bin/bash $out/bin/sh
     '';
 
 in
